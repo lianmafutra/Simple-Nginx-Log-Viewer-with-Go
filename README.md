@@ -16,6 +16,15 @@ Simple Nginx Log Viewer From Local Path File
 ### Planned Features
 - Parse to CSV
 
+### Requirements 
+
+1. Regex = ``^(\S+) - \[([^\]]+)\] "(\S+) (\S+) (\S+)" (\d+) (\d+) - "([^"]+)" - (\d+\.\d+)$``
+
+2. Nginx Log  = `119.235.212.226 - [18/Feb/2024:21:52:16 +0700] "GET / HTTP/2.0" 200 1644 - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0" - 0.058`
+
+<b> You can custom for your specific nginx log format <b>
+
+
 ### Usage
 1. Put `nginx.log `file in same directory main.go
 2. You Must edit Specific Range Date & Path File Nginx Log in `main.go` file
