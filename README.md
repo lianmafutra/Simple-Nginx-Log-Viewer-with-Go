@@ -1,8 +1,7 @@
-### Simple Nginx Log Viewer with Local path file
+Simple Nginx Log Viewer with Local path file
 ======================================
 
 #### Feature
-
 - Web Dashboard
 - Filter By Range Date
 - Total Request
