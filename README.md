@@ -22,3 +22,6 @@ Simple Nginx Log Viewer From Local Path File
 ### Screenshoot
 ![log](https://github.com/lianmafutra/Simple-Nginx-Log-Viewer-with-Go/assets/15800599/c6e8f244-43ae-4004-ae30-9da8dcb55382)
 
+![New Project (1)](https://github.com/lianmafutra/Simple-Nginx-Log-Viewer-with-Go/assets/15800599/cb5e9b42-fc62-451a-b073-5025c1ba5294)
+
+![New Project](https://github.com/lianmafutra/Simple-Nginx-Log-Viewer-with-Go/assets/15800599/35c9c9b1-c9a7-4f2e-9878-64f5a92e66d0)
