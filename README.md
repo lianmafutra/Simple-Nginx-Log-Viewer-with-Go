@@ -16,5 +16,5 @@ Simple Nginx Log Viewer From Local Path File
 ### Usage
 1. Put `nginx.log `file in same directory main.go
 2. You Must edit Specific Range Date & Path File Nginx Log in `main.go` file
-3. Running or Build file `main.go`, `go run main.go`
+3. Running file `main.go` with command `go run main.go`
 4. Open Web `http://localhost:8080`
