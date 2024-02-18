@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -14,21 +16,34 @@ import (
 
 // LogEntry represents a single log entry
 type LogEntry struct {
-	IP         string    `json:"ip"`
-	UserID     string    `json:"user_id"`
-	TimeStamp  time.Time `json:"timestamp"`
-	Method     string    `json:"method"`
-	RequestURI string    `json:"request_uri"`
-	Status     int       `json:"status"`
-	UserAgent  string    `json:"user_agent"`
+	IP           string    `json:"ip"`
+	UserID       string    `json:"user_id"`
+	TimeStamp    time.Time `json:"timestamp"`
+	Method       string    `json:"method"`
+	RequestURI   string    `json:"request_uri"`
+	Status       int       `json:"status"`
+	ResponseSize int       `json:"response_size"`
+	UserAgent    string    `json:"user_agent"`
+	ResponseTime float64   `json:"response_time"`
 }
 
 func main() {
 	// Replace with the actual path to your Nginx log file
-	filePath := "sample-small.log"
+	filePath := "nginx.log"
 	// Replace with the desired start and end dates in "2006-01-02 15:04:05" format
-	startDateStr := "2024-02-16 11:00:00"
-	endDateStr := "2024-02-16 11:59:59"
+	startDateStr := "2024-02-18 19:00:00"
+	endDateStr := "2024-02-18 23:59:59"
+
+	// Define command-line flags
+	// inputFilePath := flag.String("input", filePath, "Path to the input Nginx log file")
+	// outputFilePath := flag.String("output", "nginx_access.csv", "Path to the output CSV file")
+	// flag.Parse()
+
+	// Call the convertToCSV function
+	// err := convertToCSV(*inputFilePath, *outputFilePath)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	startDateTime, err := time.Parse("2006-01-02 15:04:05", startDateStr)
 	if err != nil {
@@ -52,7 +67,8 @@ func main() {
 		defer file.Close()
 
 		// Create a regular expression to parse the Nginx log format
-		logRegex := regexp.MustCompile(`^(\S+) \S+ \S+ \[([^\]]+)\] "(\S+) (\S+) \S+" (\d+) \d+ "([^"]+)" "([^"]+)"`)
+		// logRegex := regexp.MustCompile(`^(\S+) \S+ \S+ \[([^\]]+)\] "(\S+) (\S+) \S+" (\d+) \d+ "([^"]+)" "([^"]+)"`)
+		logRegex := regexp.MustCompile(`^(\S+) - \[([^\]]+)\] "(\S+) (\S+) (\S+)" (\d+) (\d+) - "([^"]+)" - (\d+\.\d+)$`)
 
 		// Track the number of requests per second, RequestURIs, requests per minute, total requests, and RequestURIs per second
 		requestsPerSecond := make(map[string]int)
@@ -63,6 +79,8 @@ func main() {
 		userAgentCounts := make(map[string]int)
 		statusCodeCounts := make(map[int]int)
 		httpStatusCodes := make(map[int]map[string]int)
+		topResponseTimes := make([]LogEntry, 0, 10)
+
 		// Create a scanner to read the file line by line
 		scanner := bufio.NewScanner(file)
 
@@ -85,12 +103,21 @@ func main() {
 				}
 
 				entry := LogEntry{
-					IP:         matches[1],
-					TimeStamp:  timestamp,
-					Method:     matches[3],
-					RequestURI: truncateString(matches[4], 100), // Limit RequestURI to 200 characters
-					Status:     atoi(matches[5]),
-					UserAgent:  matches[7],
+					// IP:         matches[1],
+					// TimeStamp:  timestamp,
+					// Method:     matches[3],
+					// RequestURI: truncateString(matches[4], 100), // Limit RequestURI to 200 characters
+					// Status:     atoi(matches[5]),
+					// UserAgent:  matches[7],
+					IP:           matches[1],
+					UserID:       matches[1], // Assuming user ID is the same as IP, change accordingly
+					TimeStamp:    timestamp,
+					Method:       matches[3],
+					RequestURI:   truncateString(matches[4], 100), // Limit RequestURI to 200 characters
+					Status:       atoi(matches[6]),
+					ResponseSize: atoi(matches[7]),
+					UserAgent:    matches[8],
+					ResponseTime: atof(matches[9]),
 				}
 
 				// Count requests per second
@@ -124,6 +151,19 @@ func main() {
 					httpStatusCodes[entry.Status] = make(map[string]int)
 				}
 				httpStatusCodes[entry.Status][entry.RequestURI]++
+
+				// Track top response times
+				if len(topResponseTimes) < 10 || entry.ResponseTime > topResponseTimes[9].ResponseTime {
+					topResponseTimes = append(topResponseTimes, entry)
+					// Sort top response times
+					sort.Slice(topResponseTimes, func(i, j int) bool {
+						return topResponseTimes[i].ResponseTime > topResponseTimes[j].ResponseTime
+					})
+					// Keep only the top 10
+					if len(topResponseTimes) > 10 {
+						topResponseTimes = topResponseTimes[:10]
+					}
+				}
 			}
 		}
 
@@ -209,6 +249,7 @@ func main() {
 				StatusCode int
 				Count      int
 			}
+			TopResponseTimes []LogEntry
 		}
 
 		viewData := ViewData{
@@ -248,6 +289,7 @@ func main() {
 				StatusCode int
 				URIs       map[string]int
 			}{},
+			TopResponseTimes: topResponseTimes,
 		}
 
 		// Populate the slice for the template (Top Requests Per Second)
@@ -323,7 +365,7 @@ func main() {
 		<head>
 			<meta charset="UTF-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-			<title>Log Analysis Dashboard</title>
+			<title>Nginx Log Analysis Dashboard</title>
 			<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 		</head>
 		<body class="bg-gray-100">
@@ -334,7 +376,7 @@ func main() {
 		
 				<h2 class="text-2xl font-bold text-blue-700 mb-4">Date Range: {{.Date}}</h2>
 		
-				<h3 class="text-xl font-bold text-blue-700 mb-4">Total Requests</h3>
+
 				<p class="mb-4 font-bold">Total Requests: {{.TotalRequestsFormatted}}</p>
 		
 				<h3 class="text-xl font-bold text-blue-700 mb-4">Top 10 Requests Per Second for {{.Date}}</h3>
@@ -451,6 +493,30 @@ func main() {
 					</tr>
 					{{end}}
 				</table>
+
+				<h3 class="text-xl font-bold text-blue-700 my-4">Top 10 Slow Response Times</h3>
+			<table class="border border-collapse border-blue-500 w-full">
+				<tr class="bg-blue-200">
+					<th class="border border-blue-500 px-4 py-2">Timestamp</th>
+					<th class="border border-blue-500 px-4 py-2">IP</th>
+					<th class="border border-blue-500 px-4 py-2">RequestURI</th>
+					<th class="border border-blue-500 px-4 py-2">Status</th>
+					<th class="border border-blue-500 px-4 py-2">Response Size</th>
+					<th class="border border-blue-500 px-4 py-2">User Agent</th>
+					<th class="border border-blue-500 px-4 py-2">Response Time</th>
+				</tr>
+				{{range .TopResponseTimes}}
+				<tr>
+					<td class="border border-blue-500 px-4 py-2">{{.TimeStamp.Format "2006-01-02 15:04:05"}}</td>
+					<td class="border border-blue-500 px-4 py-2">{{.IP}}</td>
+					<td class="border border-blue-500 px-4 py-2">{{.RequestURI}}</td>
+					<td class="border border-blue-500 px-4 py-2">{{.Status}}</td>
+					<td class="border border-blue-500 px-4 py-2">{{.ResponseSize}}</td>
+					<td class="border border-blue-500 px-4 py-2">{{.UserAgent}}</td>
+					<td class="border border-blue-500 px-4 py-2">{{printf "%.3f" .ResponseTime}}</td>
+				</tr>
+				{{end}}
+			</table>
 		
 			</div>
 		
@@ -516,4 +582,68 @@ func formatNumberWithCommas(n int) string {
 	}
 
 	return string(result)
+}
+
+func convertToCSV(inputFilePath string, outputFilePath string) error {
+	// Open the Nginx log file
+	file, err := os.Open(inputFilePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Create a CSV file
+	csvFile, err := os.Create(outputFilePath)
+	if err != nil {
+		return err
+	}
+	defer csvFile.Close()
+
+	// Create a CSV writer
+	writer := csv.NewWriter(csvFile)
+	defer writer.Flush()
+
+	// Define a regular expression for common Nginx log format
+	nginxLogRegex := regexp.MustCompile(`(\S+) (\S+) (\S+) \[([^\]]+)\] "(\S+ \S+ \S+)" (\d+) (\d+) "([^"]+)" "([^"]+)"`)
+
+	// Write CSV header
+	header := []string{"IP", "User", "Time", "Request", "Status", "BytesSent", "Referer", "UserAgent"}
+	err = writer.Write(header)
+	if err != nil {
+		return err
+	}
+
+	// Read and parse Nginx log entries
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		matches := nginxLogRegex.FindStringSubmatch(line)
+		if len(matches) == 0 {
+			log.Printf("Failed to parse line: %s", line)
+			continue
+		}
+
+		// Extract relevant fields
+		record := matches[1:]
+		err := writer.Write(record)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	log.Printf("Conversion completed. CSV file saved to: %s", outputFilePath)
+	return nil
+}
+
+// atof converts a string to a float64, returning 0.0 if there is an error
+func atof(s string) float64 {
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0.0
+	}
+	return f
 }
