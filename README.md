@@ -22,6 +22,11 @@ Simple Nginx Log Viewer From Local Path File
 
 2. Nginx Log  = `119.235.212.226 - [18/Feb/2024:21:52:16 +0700] "GET / HTTP/2.0" 200 1644 - "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0" - 0.058`
 
+3. Nginx Server Config = 
+`
+        log_format custom '$remote_addr - [$time_local] "$request" $status $body_bytes_sent - "$http_user_agent" - $upstream_response_time';
+`
+
 <b> You can custom for your specific nginx log format <b>
 
 
