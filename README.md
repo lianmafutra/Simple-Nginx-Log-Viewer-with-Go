@@ -13,6 +13,9 @@ Simple Nginx Log Viewer From Local Path File
 - Request URI/URL
 - User Agent, HTTP Response Code , more ...
 
+### Planned Features
+- Parse to CSV
+
 ### Usage
 1. Put `nginx.log `file in same directory main.go
 2. You Must edit Specific Range Date & Path File Nginx Log in `main.go` file
