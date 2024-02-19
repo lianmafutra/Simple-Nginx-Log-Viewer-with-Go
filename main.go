@@ -29,10 +29,10 @@ type LogEntry struct {
 
 func main() {
 	// Replace with the actual path to your Nginx log file
-	filePath := "nginx.log"
+	filePath := "siap-koja.jambikota.go.id-18-02-2024.log"
 	// Replace with the desired start and end dates in "2006-01-02 15:04:05" format
-	startDateStr := "2024-02-18 19:00:00"
-	endDateStr := "2024-02-18 23:59:59"
+	startDateStr := "2024-02-19 06:00:00"
+	endDateStr := "2024-02-19 07:20:59"
 
 	// Define command-line flags
 	// inputFilePath := flag.String("input", filePath, "Path to the input Nginx log file")
@@ -377,7 +377,7 @@ func main() {
 				<h2 class="text-2xl font-bold text-blue-700 mb-4">Date Range: {{.Date}}</h2>
 		
 
-				<p class="mb-4 font-bold">Total Requests: {{.TotalRequestsFormatted}}</p>
+				<p class="mb-4 font-bold">Total Requests: {{.TotalRequests}}</p>
 		
 				<h3 class="text-xl font-bold text-blue-700 mb-4">Top 10 Requests Per Second for {{.Date}}</h3>
 				<table class="border border-collapse border-blue-500 w-full">
