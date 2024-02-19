@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -29,21 +30,21 @@ type LogEntry struct {
 
 func main() {
 	// Replace with the actual path to your Nginx log file
-	filePath := "siap-koja.jambikota.go.id-18-02-2024.log"
+	filePath := "siap-koja.jambikota.go.id.log"
 	// Replace with the desired start and end dates in "2006-01-02 15:04:05" format
-	startDateStr := "2024-02-19 06:00:00"
-	endDateStr := "2024-02-19 07:20:59"
+	startDateStr := "2024-02-19 00:01:00"
+	endDateStr := "2024-02-19 01:00:59"
 
 	// Define command-line flags
-	// inputFilePath := flag.String("input", filePath, "Path to the input Nginx log file")
-	// outputFilePath := flag.String("output", "nginx_access.csv", "Path to the output CSV file")
-	// flag.Parse()
+	inputFilePath := flag.String("input", filePath, "Path to the input Nginx log file")
+	outputFilePath := flag.String("output", "nginx_access.csv", "Path to the output CSV file")
+	flag.Parse()
 
 	// Call the convertToCSV function
-	// err := convertToCSV(*inputFilePath, *outputFilePath)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	err := convertToCSV(*inputFilePath, *outputFilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	startDateTime, err := time.Parse("2006-01-02 15:04:05", startDateStr)
 	if err != nil {
@@ -604,7 +605,7 @@ func convertToCSV(inputFilePath string, outputFilePath string) error {
 	defer writer.Flush()
 
 	// Define a regular expression for common Nginx log format
-	nginxLogRegex := regexp.MustCompile(`(\S+) (\S+) (\S+) \[([^\]]+)\] "(\S+ \S+ \S+)" (\d+) (\d+) "([^"]+)" "([^"]+)"`)
+	nginxLogRegex := regexp.MustCompile(`^([\d.]+) - \[(\d{2}/\w+/\d{4}:\d{2}:\d{2}:\d{2} [+\-\d]+)\] "(GET|POST|PUT|DELETE) ([^"]+)" (\d+) (\d+) - "([^"]+)" - (\d+\.\d+)$`)
 
 	// Write CSV header
 	header := []string{"IP", "User", "Time", "Request", "Status", "BytesSent", "Referer", "UserAgent"}
