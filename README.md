@@ -11,6 +11,7 @@ Simple Nginx Log Viewer From Local Path File
 - RPS (Request Per Second)
 - RPM (Request Per Minute)
 - Request URI/URL
+- Slow Response Time
 - User Agent, HTTP Response Code , more ...
 
 ### Planned Features
