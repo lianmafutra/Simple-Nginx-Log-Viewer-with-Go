@@ -32,8 +32,8 @@ func main() {
 	// Replace with the actual path to your Nginx log file
 	filePath := "siap-koja.jambikota.go.id.log"
 	// Replace with the desired start and end dates in "2006-01-02 15:04:05" format
-	startDateStr := "2024-02-19 00:01:00"
-	endDateStr := "2024-02-19 01:00:59"
+	startDateStr := "2024-02-19 16:00:00"
+	endDateStr := "2024-02-19 18:00:59"
 
 	// Define command-line flags
 	inputFilePath := flag.String("input", filePath, "Path to the input Nginx log file")
@@ -81,7 +81,7 @@ func main() {
 		statusCodeCounts := make(map[int]int)
 		httpStatusCodes := make(map[int]map[string]int)
 		topResponseTimes := make([]LogEntry, 0, 10)
-
+		requestIPCounts := make(map[string]int)
 		// Create a scanner to read the file line by line
 		scanner := bufio.NewScanner(file)
 
@@ -128,12 +128,21 @@ func main() {
 				// Count RequestURIs
 				requestURICounts[entry.RequestURI]++
 
+				// Count RequestURIs
+				requestIPCounts[entry.IP]++
+
 				// Count requests per minute
 				minuteKey := entry.TimeStamp.Format("2006-01-02 15:04")
 				requestsPerMinute[minuteKey]++
 
 				// Increment total requests
 				totalRequests++
+
+				// Count RequestURIs per second
+				if _, ok := requestURIsPerSecond[secondKey]; !ok {
+					requestURIsPerSecond[secondKey] = make(map[string]int)
+				}
+				requestURIsPerSecond[secondKey][entry.RequestURI]++
 
 				// Count RequestURIs per second
 				if _, ok := requestURIsPerSecond[secondKey]; !ok {
@@ -186,6 +195,15 @@ func main() {
 			return requestURICounts[sortedURIs[i]] > requestURICounts[sortedURIs[j]]
 		})
 
+		// Sort RequestURIs in descending order
+		sortedAPI := make([]string, 0, len(requestIPCounts))
+		for ip := range requestIPCounts {
+			sortedAPI = append(sortedAPI, ip)
+		}
+		sort.Slice(sortedAPI, func(i, j int) bool {
+			return requestIPCounts[sortedAPI[i]] > requestIPCounts[sortedAPI[j]]
+		})
+
 		// Sort requests per minute in descending order
 		sortedMinutes := make([]string, 0, len(requestsPerMinute))
 		for minute := range requestsPerMinute {
@@ -232,6 +250,12 @@ func main() {
 				RequestURI string
 				Count      int
 			}
+
+			TopRequestIP       map[string]int
+			TopRequestAPISlice []struct {
+				IP    string
+				Count int
+			}
 			RequestsPerMinute      map[string]int
 			RequestsPerMinuteSlice []struct {
 				Minute string
@@ -266,6 +290,13 @@ func main() {
 				RequestURI string
 				Count      int
 			}{},
+
+			TopRequestIP: requestIPCounts,
+			TopRequestAPISlice: []struct {
+				IP    string
+				Count int
+			}{},
+
 			RequestsPerMinute: requestsPerMinute,
 			RequestsPerMinuteSlice: []struct {
 				Minute string
@@ -314,6 +345,17 @@ func main() {
 				RequestURI string
 				Count      int
 			}{RequestURI: uri, Count: requestURICounts[uri]})
+		}
+
+		// Populate the slice for the template (Top RequestURIs)
+		for i, ip := range sortedAPI {
+			if i >= 10 {
+				break
+			}
+			viewData.TopRequestAPISlice = append(viewData.TopRequestAPISlice, struct {
+				IP    string
+				Count int
+			}{IP: ip, Count: requestIPCounts[ip]})
 		}
 
 		// Populate the slice for the template (Requests Per Minute)
@@ -418,6 +460,20 @@ func main() {
 					{{range .TopRequestURIsSlice}}
 					<tr>
 						<td class="border border-blue-500 px-4 py-2">{{.RequestURI}}</td>
+						<td class="border border-blue-500 px-4 py-2">{{.Count}}</td>
+					</tr>
+					{{end}}
+				</table>
+
+				<h3 class="text-xl font-bold text-blue-700 mt-8 mb-4">Top 10 Request IP for {{.Date}} </h3>
+				<table class="border border-collapse border-blue-500 w-full">
+					<tr class="bg-blue-200">
+						<th class="border border-blue-500 px-4 py-2">IP</th>
+						<th class="border border-blue-500 px-4 py-2">Request</th>
+					</tr>
+					{{range .TopRequestAPISlice}}
+					<tr>
+						<td class="border border-blue-500 px-4 py-2">{{.IP}}</td>
 						<td class="border border-blue-500 px-4 py-2">{{.Count}}</td>
 					</tr>
 					{{end}}
