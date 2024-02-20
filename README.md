@@ -12,10 +12,9 @@ Simple Nginx Log Viewer From Local Path File
 - RPM (Request Per Minute)
 - Request URI/URL
 - Slow Response Time
+- Auto Generate CSV file
 - User Agent, HTTP Response Code , more ...
 
-### Planned Features
-- Parse to CSV
 
 ### Requirements 
 
